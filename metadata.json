@@ -1,0 +1,9 @@
+{
+  "name": "Igreja Digital",
+  "description": "Um aplicativo completo para membros de igreja com eventos, sermões, doações e assistência bíblica via IA, inspirado no layout moderno do InPeace.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

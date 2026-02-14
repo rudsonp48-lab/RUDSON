@@ -1,0 +1,10 @@
+
+{
+  "appId": "com.frutosdoespirito.app",
+  "appName": "Frutos do Espírito",
+  "webDir": ".",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
