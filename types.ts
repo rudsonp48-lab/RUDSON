@@ -21,6 +21,7 @@ export interface ChurchConfig {
   pixKey: string;
   liveUrl: string;
   liveTitle: string;
+  youtubeLiveId: string; // ID do vídeo ou ID do canal para live
   address: string;
   mapsUrl: string;
   spotifyUrl: string;
@@ -39,6 +40,8 @@ export interface Verse {
 
 export interface BiblePassage {
   reference: string;
+  book: string;
+  chapter: number;
   verses: Verse[];
 }
 
@@ -59,7 +62,7 @@ export interface Sermon {
   date: string;
   thumbnail: string;
   duration: string;
-  videoUrl: string; // Novo campo para o link do vídeo
+  videoUrl: string;
 }
 
 export interface GalleryImage {

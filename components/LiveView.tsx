@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, Bot, Sparkles, Radio, Users, Heart, Share2, Play, Pause, Volume2, Maximize2 } from 'lucide-react';
+import { Send, User, Bot, Sparkles, Radio, Users, Heart, Share2, Play, Pause, Volume2, Maximize2, Youtube, Loader2 } from 'lucide-react';
 import { askBibleQuestion } from '../services/gemini';
 import { ChurchConfig } from '../types';
 
@@ -18,6 +18,7 @@ const LiveView: React.FC<{data: ChurchConfig}> = ({ data }) => {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,57 +49,64 @@ const LiveView: React.FC<{data: ChurchConfig}> = ({ data }) => {
     }
   };
 
+  // URL do YouTube Embed para Live
+  // Se for um ID de vídeo: embed/ID
+  // Se for um ID de canal: embed/live?channel=ID
+  const youtubeUrl = data.youtubeLiveId.length > 15 
+    ? `https://www.youtube.com/embed/live?channel=${data.youtubeLiveId}&autoplay=1`
+    : `https://www.youtube.com/embed/${data.youtubeLiveId}?autoplay=1`;
+
   return (
     <div className="flex flex-col h-full bg-black">
       {/* Video Player Section */}
-      <div className="relative aspect-video bg-zinc-900 border-b border-zinc-800 group">
-        <img 
-          src={data.liveUrl} 
-          className="w-full h-full object-cover opacity-40" 
-          alt="Live Stream" 
-        />
+      <div className="relative aspect-video bg-zinc-950 border-b border-zinc-900 group overflow-hidden">
+        {!data.youtubeLiveId ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+             <Youtube size={48} className="text-zinc-800 mb-4" />
+             <p className="text-zinc-600 text-[10px] font-black uppercase tracking-widest leading-relaxed">
+               Nenhuma transmissão configurada no momento.
+             </p>
+          </div>
+        ) : (
+          <>
+            {!isVideoLoaded && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-zinc-950">
+                <Loader2 className="w-8 h-8 text-yellow-400 animate-spin mb-4" />
+                <span className="text-[10px] font-black text-zinc-700 uppercase tracking-widest">Iniciando Stream...</span>
+              </div>
+            )}
+            <iframe 
+              src={youtubeUrl}
+              className="w-full h-full border-none"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              onLoad={() => setIsVideoLoaded(true)}
+            ></iframe>
+          </>
+        )}
         
-        <div className="absolute top-4 left-4 flex items-center gap-2">
+        <div className="absolute top-4 left-4 flex items-center gap-2 pointer-events-none">
           <div className="bg-red-600 px-3 py-1 rounded-md flex items-center gap-2 shadow-lg">
             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
             <span className="text-[10px] font-black text-white uppercase tracking-widest">AO VIVO</span>
           </div>
-          <div className="bg-black/60 backdrop-blur-md px-3 py-1 rounded-md flex items-center gap-2 border border-white/10">
-            <Users size={12} className="text-zinc-400" />
-            <span className="text-[10px] font-bold text-white tracking-widest">Tempo Real</span>
-          </div>
-        </div>
-
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-black shadow-2xl transform transition-transform hover:scale-110 active:scale-95 cursor-pointer">
-                <Play size={32} fill="currentColor" className="ml-1" />
-            </div>
-        </div>
-
-        <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black to-transparent flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="flex items-center gap-4">
-                <Pause size={18} className="text-white cursor-pointer" />
-                <Volume2 size={18} className="text-white cursor-pointer" />
-                <span className="text-[10px] font-bold text-white uppercase tracking-widest">Live Transmitting</span>
-            </div>
-            <Maximize2 size={18} className="text-white cursor-pointer" />
         </div>
       </div>
 
       {/* Info Bar */}
       <div className="p-6 bg-zinc-950 border-b border-zinc-900">
-        <h2 className="text-white font-black text-xl uppercase italic tracking-tighter leading-tight">{data.liveTitle}</h2>
+        <h2 className="text-white font-black text-xl uppercase italic tracking-tighter leading-tight">{data.liveTitle || 'Culto Online'}</h2>
         <div className="flex items-center justify-between mt-4">
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center text-black font-black italic">FE</div>
+                <div className="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center text-black font-black italic shadow-lg shadow-yellow-400/10">FE</div>
                 <div>
                     <p className="text-white text-xs font-bold uppercase tracking-tight">{data.name}</p>
-                    <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Manifestando os Frutos</p>
+                    <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Canal Oficial da Igreja</p>
                 </div>
             </div>
             <div className="flex gap-3">
-                <button className="p-2 text-zinc-400 hover:text-yellow-400"><Heart size={20} /></button>
-                <button className="p-2 text-zinc-400 hover:text-yellow-400"><Share2 size={20} /></button>
+                <button className="p-2 text-zinc-400 hover:text-yellow-400 active:scale-90 transition-all"><Heart size={20} /></button>
+                <button className="p-2 text-zinc-400 hover:text-yellow-400 active:scale-90 transition-all"><Share2 size={20} /></button>
             </div>
         </div>
       </div>
@@ -106,10 +114,10 @@ const LiveView: React.FC<{data: ChurchConfig}> = ({ data }) => {
       {/* Live Chat Section */}
       <div className="flex-1 flex flex-col min-h-0 bg-black">
         <div className="px-6 py-4 border-b border-zinc-900 bg-zinc-950/50 flex items-center justify-between">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Comunidade Digital</span>
-            <div className="flex items-center gap-1">
+            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.3em]">Interatividade Digital</span>
+            <div className="flex items-center gap-1.5">
                 <Radio size={12} className="text-yellow-400" />
-                <span className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">Tempo Real</span>
+                <span className="text-[9px] font-black text-yellow-400 uppercase tracking-widest">Feed em Tempo Real</span>
             </div>
         </div>
 
@@ -149,8 +157,8 @@ const LiveView: React.FC<{data: ChurchConfig}> = ({ data }) => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={(e) => { if (e.key === 'Enter') handleSend(); }}
-                    placeholder="Sua mensagem..."
-                    className="flex-1 bg-black border border-zinc-800 text-white rounded-xl px-4 py-3 text-xs focus:ring-1 focus:ring-yellow-400 outline-none placeholder:text-zinc-700 transition-all"
+                    placeholder="Faça uma pergunta bíblica ou comente..."
+                    className="flex-1 bg-black border border-zinc-800 text-white rounded-xl px-4 py-3 text-xs focus:ring-1 focus:ring-yellow-400 outline-none placeholder:text-zinc-700 transition-all shadow-inner"
                 />
                 <button 
                     onClick={handleSend}

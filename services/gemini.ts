@@ -26,7 +26,7 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 4, delay = 4000): Pr
     if (isRetryable && retries > 0) {
       console.warn(`[Gemini API] Limite de Cota detectado. Aguardando ${delay}ms para re-tentativa... (${retries} restantes)`);
       await new Promise(resolve => setTimeout(resolve, delay));
-      return withRetry(fn, retries - 1, delay * 2); // Dobra o tempo de espera a cada falha
+      return withRetry(fn, retries - 1, delay * 2);
     }
     
     console.error("[Gemini API] Falha crítica após tentativas:", errorMsg);
@@ -35,23 +35,22 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 4, delay = 4000): Pr
 }
 
 /**
- * Motor de busca bíblico.
- * Agora com maior resiliência e tratamento de erros.
+ * Motor de busca bíblico ultra-otimizado.
  */
 export const fetchBiblePassage = async (query: string, version: string = 'ARA') => {
   return withRetry(async () => {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Referência/Tema: "${query}". Versão: "${version}".`,
+        contents: `Consulta: "${query}". Tradução: "${version}".`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              reference: { type: Type.STRING },
-              book: { type: Type.STRING },
-              chapter: { type: Type.NUMBER },
+              reference: { type: Type.STRING, description: "Referência formatada (Ex: João 3:16)" },
+              book: { type: Type.STRING, description: "Nome completo do livro na Bíblia" },
+              chapter: { type: Type.NUMBER, description: "Número do capítulo" },
               verses: {
                 type: Type.ARRAY,
                 items: {
@@ -66,23 +65,22 @@ export const fetchBiblePassage = async (query: string, version: string = 'ARA') 
             },
             required: ["reference", "book", "chapter", "verses"]
           },
-          systemInstruction: `Você é um motor de busca bíblico INFALÍVEL.
+          systemInstruction: `Você é um motor de busca bíblico de alta precisão.
           REGRAS:
-          1. Identifique o livro por abreviação ou nome completo.
-          2. Retorne APENAS os versículos da versão: ${version}.
-          3. Responda APENAS em JSON puro, sem blocos de código.
-          4. Se a busca for vaga, retorne os 5 versículos mais inspiradores sobre o tema.`,
+          1. Interprete abreviações (Ex: Jo = João, Jó = Jó, 1co = 1 Coríntios).
+          2. Se a consulta for um tema (Ex: 'ansiedade'), retorne os 10 versículos mais relevantes.
+          3. Use estritamente a versão: ${version}.
+          4. Retorne apenas o JSON. Se a referência não existir, tente encontrar a mais próxima ou retorne o livro/capítulo 1.`,
         },
       });
       
       const rawText = response.text || '';
-      const jsonStr = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-      return JSON.parse(jsonStr);
+      return JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
     } catch (error) {
       throw error;
     }
   }).catch((e) => {
-    console.error("Erro final na busca da Bíblia:", e);
+    console.error("Falha final na busca:", e);
     return null;
   });
 };
@@ -92,16 +90,16 @@ export const getBibleContext = async (book: string, chapter: number) => {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Analise teologicamente ${book} ${chapter}.`,
+        contents: `Forneça contexto teológico de ${book} capítulo ${chapter}.`,
         config: {
-          systemInstruction: "Seja breve. Forneça 3 parágrafos curtos e profundos sobre o contexto bíblico.",
+          systemInstruction: "Seja pastoral e profundo. Forneça 3 parágrafos curtos explicando o contexto histórico e espiritual.",
         },
       });
       return response.text;
     } catch (error) {
       throw error;
     }
-  }).catch(() => "O insight teológico está temporariamente indisponível devido à alta demanda.");
+  }).catch(() => "O insight teológico está indisponível agora.");
 };
 
 export const askBibleQuestion = async (question: string) => {
@@ -111,14 +109,14 @@ export const askBibleQuestion = async (question: string) => {
         model: 'gemini-3-flash-preview',
         contents: question,
         config: {
-          systemInstruction: "Responda de forma curta e bíblica.",
+          systemInstruction: "Responda de forma curta e pastoral com base nas Escrituras.",
         },
       });
       return response.text;
     } catch (error) {
       throw error;
     }
-  }).catch(() => "Nossos servidores estão processando muitas orações no momento. Tente novamente em 1 minuto.");
+  }).catch(() => "O sistema está com alta demanda. Tente novamente em breve.");
 };
 
 export const summarizeSermon = async (title: string, speaker: string) => {
@@ -126,16 +124,16 @@ export const summarizeSermon = async (title: string, speaker: string) => {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Resuma: "${title}" de "${speaker}".`,
+        contents: `Resumo de: ${title} por ${speaker}`,
         config: {
-          systemInstruction: "Resuma em 3 pontos principais.",
+          systemInstruction: "Resuma os pontos fundamentais da pregação.",
         },
       });
       return response.text;
     } catch (error) {
       throw error;
     }
-  }).catch(() => "O resumo por IA atingiu o limite de cota hoje.");
+  }).catch(() => "Resumo indisponível.");
 };
 
 export const generatePrayer = async (intent: string) => {
@@ -143,14 +141,14 @@ export const generatePrayer = async (intent: string) => {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Pedido: "${intent}"`,
+        contents: `Oração para: ${intent}`,
         config: {
-          systemInstruction: "Escreva uma oração curta e bíblica.",
+          systemInstruction: "Escreva uma oração bíblica e curta.",
         },
       });
       return response.text;
     } catch (error) {
       throw error;
     }
-  }).catch(() => "Não conseguimos gerar o texto da oração, mas Deus conhece o seu coração.");
+  }).catch(() => "Deus conhece seu coração, fale com Ele em oração.");
 };

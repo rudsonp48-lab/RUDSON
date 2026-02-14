@@ -16,7 +16,8 @@ import {
   RotateCcw,
   Copy,
   WifiOff,
-  AlertCircle
+  AlertCircle,
+  History
 } from 'lucide-react';
 import { fetchBiblePassage, getBibleContext } from '../services/gemini';
 import { BibleBook, BiblePassage } from '../types';
@@ -66,11 +67,23 @@ const BIBLE_VERSIONS = [
   { id: 'KJA', name: 'King James Atualizada' }
 ];
 
+const CACHE_PREFIX = 'bible_v3_';
+
 const BibleView: React.FC = () => {
+  // Estado inicial baseado no último acesso
   const [viewMode, setViewMode] = useState<'reader' | 'books' | 'chapters' | 'versions'>('reader');
-  const [selectedBook, setSelectedBook] = useState<BibleBook>(BIBLE_BOOKS[18]); // Salmos
-  const [selectedChapter, setSelectedChapter] = useState(23);
-  const [selectedVersion, setSelectedVersion] = useState('ARA');
+  const [selectedBook, setSelectedBook] = useState<BibleBook>(() => {
+    const last = localStorage.getItem('last_read_book');
+    return last ? JSON.parse(last) : BIBLE_BOOKS[18];
+  });
+  const [selectedChapter, setSelectedChapter] = useState(() => {
+    const last = localStorage.getItem('last_read_chapter');
+    return last ? parseInt(last) : 23;
+  });
+  const [selectedVersion, setSelectedVersion] = useState(() => {
+    return localStorage.getItem('selected_version') || 'ARA';
+  });
+
   const [passage, setPassage] = useState<BiblePassage | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -82,9 +95,21 @@ const BibleView: React.FC = () => {
   const [loadingContext, setLoadingContext] = useState(false);
   const [showContextModal, setShowContextModal] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
-  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [isOfflineMode, setIsOfflineMode] = useState(!navigator.onLine);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Sincroniza estado offline
+  useEffect(() => {
+    const handleOnline = () => setIsOfflineMode(false);
+    const handleOffline = () => setIsOfflineMode(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -95,18 +120,26 @@ const BibleView: React.FC = () => {
   };
 
   const loadPassage = useCallback(async (book: string = selectedBook.name, chapter: number = selectedChapter, version: string = selectedVersion) => {
-    const cacheKey = `bible_v2_${book}_${chapter}_${version}`;
+    const cacheKey = `${CACHE_PREFIX}${book.toLowerCase()}_${chapter}_${version.toLowerCase()}`;
     const cached = localStorage.getItem(cacheKey);
     
+    // Persistência do último lido
+    localStorage.setItem('last_read_book', JSON.stringify(selectedBook));
+    localStorage.setItem('last_read_chapter', chapter.toString());
+    localStorage.setItem('selected_version', version);
+
     if (cached) {
       setPassage(JSON.parse(cached));
-      setIsOfflineMode(true);
       setHasError(false);
       if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
       return;
     }
 
-    setIsOfflineMode(false);
+    if (!navigator.onLine) {
+      setHasError(true);
+      return;
+    }
+
     setLoading(true);
     setHasError(false);
 
@@ -134,16 +167,39 @@ const BibleView: React.FC = () => {
   const handleSearch = async (forcedQuery?: string) => {
     const q = forcedQuery || searchQuery;
     if (!q.trim()) return;
+
+    // Tenta carregar do cache se for uma busca de capítulo simples
+    const cacheKey = `${CACHE_PREFIX}search_${q.toLowerCase().replace(/\s/g, '')}_${selectedVersion.toLowerCase()}`;
+    const cached = localStorage.getItem(cacheKey);
     
+    if (cached) {
+      const result = JSON.parse(cached);
+      setPassage(result);
+      const foundBook = BIBLE_BOOKS.find(b => b.name.toLowerCase() === result.book?.toLowerCase());
+      if (foundBook) {
+        setSelectedBook(foundBook);
+        setSelectedChapter(result.chapter || 1);
+      }
+      setSearchQuery('');
+      setViewMode('reader');
+      return;
+    }
+
+    if (!navigator.onLine) {
+      alert("Busca offline limitada ao que já foi lido. Tente navegar pelos livros.");
+      return;
+    }
+
     setLoading(true);
     setHasError(false);
     const result = await fetchBiblePassage(q, selectedVersion);
     if (result) {
-      const bookName = (result as any).book || "";
+      localStorage.setItem(cacheKey, JSON.stringify(result));
+      const bookName = result.book || "";
       const foundBook = BIBLE_BOOKS.find(b => b.name.toLowerCase() === bookName.toLowerCase());
       if (foundBook) {
         setSelectedBook(foundBook);
-        setSelectedChapter((result as any).chapter || 1);
+        setSelectedChapter(result.chapter || 1);
       }
       setPassage(result);
       setSearchQuery('');
@@ -263,7 +319,7 @@ const BibleView: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => { if (e.key === 'Enter') handleSearch(); }}
-              placeholder="Sintonizar Referência... (Ex: Jo 3)"
+              placeholder="Referência ou Tema... (Ex: Jo 3 ou Amor)"
               className="w-full bg-zinc-900/40 border-2 border-zinc-800 text-white rounded-2xl py-4 pl-12 pr-12 text-xs font-bold focus:ring-1 focus:ring-yellow-400/50 outline-none transition-all placeholder:text-zinc-700"
             />
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-yellow-400 transition-colors" size={18} />
@@ -292,10 +348,10 @@ const BibleView: React.FC = () => {
           </button>
         </div>
 
-        {isOfflineMode && !hasError && (
+        {isOfflineMode && (
           <div className="mt-4 flex items-center justify-center gap-2">
              <WifiOff size={10} className="text-zinc-600" />
-             <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Modo Offline: Leitura do Cache</span>
+             <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.3em]">Arquivo Local: Modo Offline</span>
           </div>
         )}
       </div>
@@ -314,7 +370,7 @@ const BibleView: React.FC = () => {
             </div>
             <div className="text-center">
               <p className="text-[10px] font-black text-yellow-400 uppercase tracking-[0.6em] mb-2 animate-pulse">Sintonizando</p>
-              <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">Frequência da Palavra</p>
+              <p className="text-[9px] font-bold text-zinc-700 uppercase tracking-widest">Neural Bible Engine</p>
             </div>
           </div>
         ) : hasError ? (
@@ -324,24 +380,26 @@ const BibleView: React.FC = () => {
             </div>
             <h3 className="text-white font-black uppercase italic tracking-tighter text-xl mb-4">Sinal Interrompido</h3>
             <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest leading-relaxed max-w-xs mb-10">
-              Muitas pessoas estão acessando a Bíblia agora. Nossa cota da IA está sobrecarregada.
+              {isOfflineMode ? "Conecte-se à internet para acessar novos capítulos." : "Muitas requisições. O sistema está aguardando para sintonizar novamente."}
             </p>
             <button onClick={() => loadPassage()} className="px-10 py-5 bg-yellow-400 text-black font-black rounded-3xl text-[11px] uppercase tracking-widest flex items-center gap-4 active:scale-95 transition-all shadow-xl shadow-yellow-400/20">
-               <RotateCcw size={18} /> Tentar Sintonizar
+               <RotateCcw size={18} /> Forçar Sintonização
             </button>
           </div>
         ) : passage ? (
           <>
             <div className="text-center pb-12 pt-10">
-              <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter mb-4 leading-none">{selectedBook.name}</h1>
+              {/* @ts-ignore passage.book now exists on the interface */}
+              <h1 className="text-6xl font-black text-white italic uppercase tracking-tighter mb-4 leading-none">{passage.book || selectedBook.name}</h1>
               <div className="flex items-center justify-center gap-4">
                 <div className="h-[2px] w-8 bg-gradient-to-r from-transparent to-yellow-400/20"></div>
-                <span className="text-yellow-400 font-black text-lg tracking-[0.2em] uppercase italic bg-yellow-400/5 px-6 py-2 rounded-full border border-yellow-400/10">Capítulo {selectedChapter}</span>
+                {/* @ts-ignore passage.chapter now exists on the interface */}
+                <span className="text-yellow-400 font-black text-lg tracking-[0.2em] uppercase italic bg-yellow-400/5 px-6 py-2 rounded-full border border-yellow-400/10">Capítulo {passage.chapter || selectedChapter}</span>
                 <div className="h-[2px] w-8 bg-gradient-to-l from-transparent to-yellow-400/20"></div>
               </div>
             </div>
             
-            <div className="space-y-10 max-w-xl mx-auto">
+            <div className="space-y-10 max-w-xl mx-auto pb-10 border-b border-zinc-900/50">
               {passage.verses.map((v) => (
                 <div key={v.num} className="group relative">
                   <div className="flex gap-8">
@@ -371,11 +429,11 @@ const BibleView: React.FC = () => {
                  setContext(result);
                  setLoadingContext(false);
                }} className="px-12 py-6 bg-zinc-900/30 border-2 border-zinc-800 rounded-[2.5rem] text-yellow-400 font-black text-[11px] uppercase tracking-[0.4em] flex items-center gap-5 active:scale-95 transition-all hover:bg-zinc-900 hover:border-yellow-400/30 shadow-2xl">
-                  <Sparkles size={20} /> Profundidade Teológica IA
+                  <Sparkles size={20} /> Insight Teológico IA
                </button>
                <div className="flex flex-col items-center gap-1 opacity-20">
                   <p className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.5em]">Powered by Gemini 3 Flash</p>
-                  <p className="text-[7px] font-black text-zinc-600 uppercase tracking-widest italic">Neural Scripture Engine v2.6</p>
+                  <p className="text-[7px] font-black text-zinc-600 uppercase tracking-widest italic">Offline Cache V3 Activated</p>
                </div>
             </div>
           </>
@@ -384,7 +442,7 @@ const BibleView: React.FC = () => {
             <BookIcon size={80} className="text-zinc-900 mb-10 animate-pulse" />
             <p className="text-zinc-700 text-[12px] font-black uppercase tracking-[0.4em] max-w-[260px] leading-relaxed italic">Inicie sua jornada nas Escrituras.</p>
             <button onClick={() => loadPassage()} className="mt-12 text-yellow-400 flex items-center gap-4 font-black text-[11px] uppercase tracking-[0.3em] border-2 border-yellow-400/10 px-10 py-5 rounded-[2rem] hover:bg-yellow-400/5 transition-all active:scale-95">
-              <RotateCcw size={18} /> Reiniciar Sistema
+              <RotateCcw size={18} /> Recarregar Último Lindo
             </button>
           </div>
         )}
@@ -422,7 +480,7 @@ const BibleView: React.FC = () => {
             }}
             className="flex-1 py-6 bg-yellow-400 text-black font-black rounded-[2.5rem] text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-4 shadow-[0_20px_50px_rgba(250,204,21,0.3)] active:scale-95 transition-all"
           >
-            <span className="hidden xs:inline">Avançar</span> <ChevronRight size={24} strokeWidth={3} />
+            <span className="hidden xs:inline">Próximo</span> <ChevronRight size={24} strokeWidth={3} />
           </button>
         </div>
       )}

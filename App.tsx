@@ -135,14 +135,18 @@ const App: React.FC = () => {
   };
 
   const confirmLogout = () => {
-    localStorage.removeItem('church_user_profile');
-    localStorage.removeItem('church_notes');
+    // Se não for admin, apaga os dados. Se for admin, preserva.
+    if (!isAdmin) {
+      localStorage.removeItem('church_user_profile');
+      localStorage.removeItem('church_notes');
+      setUserProfile(DEFAULT_PROFILE);
+    }
+    
     setIsAuthenticated(false);
     setIsAdmin(false);
     setShowLogoutModal(false);
     setIsSidebarOpen(false);
     setCurrentView(AppView.HOME);
-    setUserProfile(DEFAULT_PROFILE);
   };
 
   if (!isAuthenticated) {
@@ -193,15 +197,24 @@ const App: React.FC = () => {
       {showLogoutModal && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-8 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-sm bg-zinc-950 border border-zinc-900 rounded-[2.5rem] p-8 animate-slideUp">
-            <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
+            <div className={`w-16 h-16 ${isAdmin ? 'bg-yellow-400/10 text-yellow-400' : 'bg-red-500/10 text-red-500'} rounded-2xl flex items-center justify-center mx-auto mb-6`}>
               <AlertTriangle size={32} />
             </div>
-            <h3 className="text-white text-xl font-black text-center uppercase italic tracking-tighter mb-2">Encerrar Sessão?</h3>
+            <h3 className="text-white text-xl font-black text-center uppercase italic tracking-tighter mb-2">
+              {isAdmin ? 'Encerrar Sessão?' : 'Encerrar e Limpar?'}
+            </h3>
             <p className="text-zinc-500 text-xs font-bold text-center uppercase tracking-widest leading-relaxed mb-8">
-              Suas informações de perfil e anotações privadas serão removidas deste dispositivo.
+              {isAdmin 
+                ? 'Você será desconectado do painel administrativo, mas suas preferências locais serão mantidas neste dispositivo.' 
+                : 'Suas informações de perfil e anotações privadas serão removidas permanentemente deste dispositivo.'}
             </p>
             <div className="space-y-3">
-              <button onClick={confirmLogout} className="w-full py-4 bg-red-600 text-white font-black rounded-2xl text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-red-600/10 active:scale-95 transition-all">Limpar e Sair</button>
+              <button 
+                onClick={confirmLogout} 
+                className={`w-full py-4 ${isAdmin ? 'bg-zinc-100 text-black' : 'bg-red-600 text-white'} font-black rounded-2xl text-[11px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all`}
+              >
+                {isAdmin ? 'Encerrar Sessão' : 'Limpar e Sair'}
+              </button>
               <button onClick={() => setShowLogoutModal(false)} className="w-full py-4 bg-zinc-900 text-zinc-400 font-black rounded-2xl text-[11px] uppercase tracking-[0.2em] active:scale-95 transition-all">Cancelar</button>
             </div>
           </div>

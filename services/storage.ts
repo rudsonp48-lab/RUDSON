@@ -9,6 +9,7 @@ const DEFAULT_DATA: AppData = {
     pixKey: "financeiro@frutosdoespirito.org",
     liveUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800",
     liveTitle: "Culto de Celebração e Adoração",
+    youtubeLiveId: "", // Vazio por padrão
     address: "Rua das Oliveiras, 123 - Centro",
     mapsUrl: "https://maps.google.com",
     spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DX8977F2mXl9z"
@@ -49,7 +50,6 @@ export const loadAppData = (): AppData => {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      // Deep merge with defaults to ensure missing arrays are populated
       return {
         ...DEFAULT_DATA,
         ...parsed,
