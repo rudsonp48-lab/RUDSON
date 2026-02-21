@@ -19,7 +19,9 @@ import {
   Info,
   Type,
   Image as ImageIcon,
-  Youtube
+  Youtube,
+  DollarSign,
+  Tag
 } from 'lucide-react';
 import { loadAppData, saveAppData } from '../services/storage';
 import { AppData, ChurchEvent, GalleryImage, Cell, Sermon } from '../types';
@@ -105,9 +107,9 @@ const AdminView: React.FC<{onBack: () => void}> = ({ onBack }) => {
         </div>
         <button 
           onClick={handleSave}
-          className="bg-yellow-400 text-black px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-yellow-400/10 active:scale-95 transition-all"
+          className="bg-yellow-400 text-black px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-yellow-400/10 active:scale-95 transition-all"
         >
-          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
           Salvar Alterações
         </button>
       </div>
@@ -149,7 +151,6 @@ const AdminView: React.FC<{onBack: () => void}> = ({ onBack }) => {
           </div>
         )}
 
-        {/* ... Restante do componente AdminView permanece igual ... */}
         {activeTab === 'sermons' && (
           <div className="space-y-6">
             <button onClick={addEmptySermon} className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:border-yellow-400 transition-all">
@@ -172,8 +173,82 @@ const AdminView: React.FC<{onBack: () => void}> = ({ onBack }) => {
             ))}
           </div>
         )}
-        
-        {/* Gallery, Cells, Events tabs continuam iguais... */}
+
+        {activeTab === 'events' && (
+          <div className="space-y-6">
+            <button onClick={addEmptyEvent} className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:border-yellow-400 transition-all">
+              <Plus size={14} /> Novo Evento
+            </button>
+            {safeEvents.map(event => (
+              <div key={event.id} className="bg-zinc-950 border border-zinc-900 p-6 rounded-[2.5rem] space-y-4 shadow-xl">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-yellow-400 uppercase tracking-widest">Evento Pastoral</span>
+                  <button onClick={() => setData({...data, events: safeEvents.filter(e => e.id !== event.id)})} className="p-2 text-zinc-700 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
+                </div>
+                <AdminField label="Título do Evento" value={event.title} onChange={(v) => setData({...data, events: safeEvents.map(e => e.id === event.id ? {...e, title: v} : e)})} />
+                <div className="grid grid-cols-2 gap-3">
+                  <AdminField label="Data (Ex: 10 Jan)" value={event.date} onChange={(v) => setData({...data, events: safeEvents.map(e => e.id === event.id ? {...e, date: v} : e)})} icon={<Calendar size={14} />} />
+                  <AdminField label="Horário" value={event.time} onChange={(v) => setData({...data, events: safeEvents.map(e => e.id === event.id ? {...e, time: v} : e)})} icon={<Clock size={14} />} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <AdminField label="Local" value={event.location} onChange={(v) => setData({...data, events: safeEvents.map(e => e.id === event.id ? {...e, location: v} : e)})} icon={<MapPin size={14} />} />
+                  <AdminField label="Preço / Valor" value={event.price} onChange={(v) => setData({...data, events: safeEvents.map(e => e.id === event.id ? {...e, price: v} : e)})} icon={<DollarSign size={14} />} />
+                </div>
+                <AdminField label="URL da Imagem de Capa" value={event.image} onChange={(v) => setData({...data, events: safeEvents.map(e => e.id === event.id ? {...e, image: v} : e)})} icon={<ImageIcon size={14} />} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {activeTab === 'gallery' && (
+          <div className="space-y-6">
+            <button onClick={addEmptyPhoto} className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:border-yellow-400 transition-all">
+              <Plus size={14} /> Adicionar Foto
+            </button>
+            <div className="grid grid-cols-1 gap-4">
+              {safeGallery.map(photo => (
+                <div key={photo.id} className="bg-zinc-950 border border-zinc-900 p-5 rounded-[2rem] flex gap-4 items-center">
+                  <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-zinc-800">
+                    <img src={photo.url} className="w-full h-full object-cover" alt="" />
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <AdminField label="Título" value={photo.title} onChange={(v) => setData({...data, gallery: safeGallery.map(p => p.id === photo.id ? {...p, title: v} : p)})} />
+                    <div className="grid grid-cols-2 gap-2">
+                       <AdminField label="Categoria" value={photo.category} onChange={(v) => setData({...data, gallery: safeGallery.map(p => p.id === photo.id ? {...p, category: v} : p)})} icon={<Tag size={12} />} />
+                       <AdminField label="URL Foto" value={photo.url} onChange={(v) => setData({...data, gallery: safeGallery.map(p => p.id === photo.id ? {...p, url: v} : p)})} />
+                    </div>
+                  </div>
+                  <button onClick={() => setData({...data, gallery: safeGallery.filter(p => p.id !== photo.id)})} className="p-3 text-zinc-800 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'cells' && (
+          <div className="space-y-6">
+            <button onClick={addEmptyCell} className="w-full py-4 border-2 border-dashed border-zinc-800 rounded-2xl text-zinc-500 font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:border-yellow-400 transition-all">
+              <Plus size={14} /> Nova Célula
+            </button>
+            {safeCells.map(cell => (
+              <div key={cell.id} className="bg-zinc-950 border border-zinc-900 p-6 rounded-[2.5rem] space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-yellow-400 uppercase tracking-widest">Grupo Familiar</span>
+                  <button onClick={() => setData({...data, cells: safeCells.filter(c => c.id !== cell.id)})} className="p-2 text-zinc-700 hover:text-red-500 transition-colors"><Trash2 size={18}/></button>
+                </div>
+                <AdminField label="Nome da Célula" value={cell.name} onChange={(v) => setData({...data, cells: safeCells.map(c => c.id === cell.id ? {...c, name: v} : c)})} />
+                <div className="grid grid-cols-2 gap-3">
+                  <AdminField label="Líder / Anfitrião" value={cell.host} onChange={(v) => setData({...data, cells: safeCells.map(c => c.id === cell.id ? {...c, host: v} : c)})} icon={<UserIcon size={14} />} />
+                  <AdminField label="Bairro / Local" value={cell.location} onChange={(v) => setData({...data, cells: safeCells.map(c => c.id === cell.id ? {...c, location: v} : c)})} icon={<MapPin size={14} />} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <AdminField label="Dia" value={cell.day} onChange={(v) => setData({...data, cells: safeCells.map(c => c.id === cell.id ? {...c, day: v} : c)})} icon={<Calendar size={14} />} />
+                  <AdminField label="Hora" value={cell.time} onChange={(v) => setData({...data, cells: safeCells.map(c => c.id === cell.id ? {...c, time: v} : c)})} icon={<Clock size={14} />} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

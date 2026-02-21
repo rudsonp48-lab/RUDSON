@@ -169,7 +169,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onSuccess, onBack, isInitialLogin
             <button 
               type="submit"
               disabled={loading}
-              className="w-full bg-yellow-400 text-black font-black py-4.5 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-yellow-400/20 uppercase tracking-[0.2em] text-[11px] disabled:opacity-50"
+              className="w-full bg-yellow-400 text-black font-black py-3.5 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-yellow-400/20 uppercase tracking-[0.2em] text-[10px] disabled:opacity-50"
             >
               {loading ? (
                 <>

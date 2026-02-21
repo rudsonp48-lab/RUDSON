@@ -303,9 +303,9 @@ const MoreView: React.FC<MoreViewProps> = ({ onAdminClick, onLogout, isAdmin, da
 
                <button 
                 onClick={saveProfile}
-                className="w-full bg-yellow-400 text-black font-black py-4.5 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl shadow-yellow-400/20 uppercase tracking-[0.2em] text-[11px]"
+                className="w-full bg-yellow-400 text-black font-black py-3 rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl shadow-yellow-400/20 uppercase tracking-[0.2em] text-[10px]"
                >
-                 <Save size={18} /> Salvar Alterações
+                 <Save size={16} /> Salvar Alterações
                </button>
             </div>
           </div>

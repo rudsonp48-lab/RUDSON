@@ -272,8 +272,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onNavigate, data }) => {
   );
 };
 
-// Componente Helper FuturisticAction
-const FuturisticAction = ({ icon, label, onClick, color }: { icon: React.ReactNode, label: string, onClick: () => void, color: string, isSpotify?: boolean }) => {
+// Fix: Use React.FC for FuturisticAction to handle standard props like 'key' correctly
+const FuturisticAction: React.FC<{ icon: React.ReactNode, label: string, onClick: () => void, color: string, isSpotify?: boolean }> = ({ icon, label, onClick, color, isSpotify }) => {
   const colorMap: Record<string, string> = {
     yellow: 'text-yellow-400 border-yellow-400/20 bg-yellow-400/5',
     blue: 'text-blue-400 border-blue-400/20 bg-blue-400/5',
@@ -298,8 +298,8 @@ const FuturisticAction = ({ icon, label, onClick, color }: { icon: React.ReactNo
   );
 };
 
-// Componente Helper CyberCard
-const CyberCard = ({ title, date, image }: { title: string, date: string, image: string }) => (
+// Fix: Use React.FC for CyberCard to allow 'key' prop in JSX mappings and avoid TypeScript errors on line 200
+const CyberCard: React.FC<{ title: string, date: string, image: string }> = ({ title, date, image }) => (
   <div className="relative w-72 shrink-0 aspect-[16/10] rounded-[2.5rem] overflow-hidden border border-zinc-900 group shadow-2xl cursor-pointer active:scale-95 transition-all">
     <img 
       src={image} 
@@ -317,8 +317,8 @@ const CyberCard = ({ title, date, image }: { title: string, date: string, image:
   </div>
 );
 
-// Componente Helper BotIcon (não importado de lucide)
-const BotIcon = ({ size }: { size: number }) => (
+// Fix: Use React.FC for BotIcon helper component to ensure consistent typing
+const BotIcon: React.FC<{ size: number }> = ({ size }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 8V4H8" />
     <rect width="16" height="12" x="4" y="8" rx="2" />

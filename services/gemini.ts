@@ -36,12 +36,13 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 4, delay = 4000): Pr
 
 /**
  * Motor de busca bíblico ultra-otimizado.
+ * Fix: Upgraded to 'gemini-3-pro-preview' for complex reasoning and structure accuracy.
  */
 export const fetchBiblePassage = async (query: string, version: string = 'ARA') => {
   return withRetry(async () => {
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Consulta: "${query}". Tradução: "${version}".`,
         config: {
           responseMimeType: "application/json",
@@ -85,11 +86,15 @@ export const fetchBiblePassage = async (query: string, version: string = 'ARA') 
   });
 };
 
+/**
+ * Fornece contexto teológico profundo.
+ * Fix: Upgraded to 'gemini-3-pro-preview' for theological insight complexity.
+ */
 export const getBibleContext = async (book: string, chapter: number) => {
   return withRetry(async () => {
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: `Forneça contexto teológico de ${book} capítulo ${chapter}.`,
         config: {
           systemInstruction: "Seja pastoral e profundo. Forneça 3 parágrafos curtos explicando o contexto histórico e espiritual.",
@@ -102,11 +107,15 @@ export const getBibleContext = async (book: string, chapter: number) => {
   }).catch(() => "O insight teológico está indisponível agora.");
 };
 
+/**
+ * Responde perguntas bíblicas com profundidade pastoral.
+ * Fix: Upgraded to 'gemini-3-pro-preview' for advanced reasoning about scriptures.
+ */
 export const askBibleQuestion = async (question: string) => {
   return withRetry(async () => {
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3-pro-preview',
         contents: question,
         config: {
           systemInstruction: "Responda de forma curta e pastoral com base nas Escrituras.",
@@ -119,6 +128,9 @@ export const askBibleQuestion = async (question: string) => {
   }).catch(() => "O sistema está com alta demanda. Tente novamente em breve.");
 };
 
+/**
+ * Resumo de pregações - Basic text task uses 'gemini-3-flash-preview'.
+ */
 export const summarizeSermon = async (title: string, speaker: string) => {
   return withRetry(async () => {
     try {
@@ -136,6 +148,9 @@ export const summarizeSermon = async (title: string, speaker: string) => {
   }).catch(() => "Resumo indisponível.");
 };
 
+/**
+ * Geração de orações - Basic text task uses 'gemini-3-flash-preview'.
+ */
 export const generatePrayer = async (intent: string) => {
   return withRetry(async () => {
     try {
