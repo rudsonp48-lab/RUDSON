@@ -108,7 +108,7 @@ async function startServer() {
 
   // Export for Vercel
   if (process.env.VERCEL) {
-    module.exports = app;
+    return app;
   } else {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
@@ -116,4 +116,8 @@ async function startServer() {
   }
 }
 
-startServer();
+const appPromise = startServer();
+export default async (req: any, res: any) => {
+  const app = await appPromise;
+  return app(req, res);
+};
