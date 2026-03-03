@@ -98,16 +98,32 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [appData, setAppData] = useState<AppData>(loadAppData());
+  const [appData, setAppData] = useState<AppData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('church_user_profile');
     return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
   });
 
+  const fetchData = async () => {
+    try {
+      const data = await loadAppData();
+      setAppData(data);
+    } catch (error) {
+      console.error("Failed to load app data", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (currentView) {
-      setAppData(loadAppData());
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (currentView && !isLoading) {
+      fetchData();
     }
   }, [currentView]);
 
@@ -149,15 +165,23 @@ const App: React.FC = () => {
     setCurrentView(AppView.HOME);
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || isLoading || !appData) {
     return (
       <Suspense fallback={<div className="h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-yellow-400" /></div>}>
-        <LoginView onSuccess={handleLoginSuccess} onBack={() => {}} isInitialLogin={true} />
+        {!isAuthenticated ? (
+          <LoginView onSuccess={handleLoginSuccess} onBack={() => {}} isInitialLogin={true} />
+        ) : (
+          <div className="h-screen bg-black flex items-center justify-center flex-col gap-4">
+            <Loader2 className="animate-spin text-yellow-400 w-10 h-10" />
+            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">Sincronizando com a Nuvem...</p>
+          </div>
+        )}
       </Suspense>
     );
   }
 
   const renderViewContent = () => {
+    if (!appData) return <ViewSkeleton />;
     const events = appData.events || [];
     const sermons = appData.sermons || [];
     const gallery = appData.gallery || [];
@@ -183,8 +207,8 @@ const App: React.FC = () => {
       case AppView.TITHING: return <TithingView pixKey={appData.config.pixKey} />;
       case AppView.CELLS: return <CellsView data={cells} />;
       case AppView.LIVE: return <LiveView data={appData.config} />;
-      case AppView.ADMIN: return isAdmin ? <AdminView onBack={() => {
-        setAppData(loadAppData());
+      case AppView.ADMIN: return isAdmin ? <AdminView onBack={async () => {
+        await fetchData();
         navigateTo(AppView.MORE);
       }} /> : <HomeView onNavigate={navigateTo} data={appData} />;
       default: return <HomeView onNavigate={navigateTo} data={appData} />;

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   Plus, 
@@ -27,16 +27,35 @@ import { loadAppData, saveAppData } from '../services/storage';
 import { AppData, ChurchEvent, GalleryImage, Cell, Sermon } from '../types';
 
 const AdminView: React.FC<{onBack: () => void}> = ({ onBack }) => {
-  const [data, setData] = useState<AppData>(loadAppData());
+  const [data, setData] = useState<AppData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'config' | 'events' | 'gallery' | 'cells' | 'sermons'>('config');
 
-  const handleSave = () => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const result = await loadAppData();
+        setData(result);
+      } catch (error) {
+        console.error("Error loading data in Admin", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleSave = async () => {
+    if (!data) return;
     setIsSaving(true);
-    saveAppData(data);
-    setTimeout(() => {
+    try {
+      await saveAppData(data);
+    } catch (error) {
+      console.error("Error saving data", error);
+    } finally {
       setIsSaving(false);
-    }, 800);
+    }
   };
 
   const addEmptyEvent = () => {
@@ -87,6 +106,15 @@ const AdminView: React.FC<{onBack: () => void}> = ({ onBack }) => {
     };
     setData({ ...data, gallery: [newPhoto, ...(data.gallery || [])] });
   };
+
+  if (isLoading || !data) {
+    return (
+      <div className="h-screen bg-black flex items-center justify-center flex-col gap-4">
+        <Loader2 className="animate-spin text-yellow-400 w-10 h-10" />
+        <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">Carregando Painel...</p>
+      </div>
+    );
+  }
 
   const safeEvents = data.events || [];
   const safeCells = data.cells || [];
